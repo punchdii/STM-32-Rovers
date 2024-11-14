@@ -42,6 +42,7 @@ uint16_t mq9_digital  = 0;
 /* Private variables ---------------------------------------------------------*/
 TIM_HandleTypeDef htim1;
 
+UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
@@ -50,10 +51,10 @@ UART_HandleTypeDef huart2;
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
-
 static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_TIM1_Init(void);
+static void MX_USART1_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -69,13 +70,35 @@ float tFahrenheit = 0;
 float RH = 0;
 
 
+//ultrasounic
+#define TRIG_PIN GPIO_PIN_0
+#define TRIG_PORT GPIOA
+#define ECHO_PIN GPIO_PIN_1
+#define ECHO_PORT GPIOA
+uint32_t pMillis;
+uint32_t Value1 = 0;
+uint32_t Value2 = 0;
+uint16_t Distance  = 0;  // cm
+
+
+//mq9 sensor
+#define MQ9_digital_PIN GPIO_PIN_3
+#define MQ9_digital_PORT GPIOA
+
+
+//motors
+
+
+
+
+//UART transimission
+uint8_t rx_buff[4] = {};
 
 void microDelay (uint16_t delay)
 {
   __HAL_TIM_SET_COUNTER(&htim1, 0);
   while (__HAL_TIM_GET_COUNTER(&htim1) < delay);
 }
-
 
 uint8_t DHT11_Start (void)
 {
@@ -107,9 +130,6 @@ uint8_t DHT11_Start (void)
   }
   return Response;
 }
-
-
-
 
 uint8_t DHT11_Read (void)
 {
@@ -169,11 +189,11 @@ int main(void)
   MX_GPIO_Init();
   MX_USART2_UART_Init();
   MX_TIM1_Init();
-
-
-
+  MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_Base_Start(&htim1);
+
+  HAL_GPIO_WritePin(TRIG_PORT, TRIG_PIN, GPIO_PIN_RESET);  // pull the TRIG pin low
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -199,14 +219,76 @@ int main(void)
 	  }
 
 
-	  //mq9 sensor
+//
+//	  //mq9 sensor
+	  if (HAL_GPIO_ReadPin (MQ9_digital_PORT, MQ9_digital_PIN) == GPIO_PIN_SET){
+		  __NOP();
+		  //light up led or smth
+	  }
+//
+//
+//
+//	  HAL_Delay(10);
+//	  //ultrasonic sensor
+
+	  HAL_GPIO_WritePin(TRIG_PORT, TRIG_PIN, GPIO_PIN_SET);  // pull the TRIG pin HIGH
+	      __HAL_TIM_SET_COUNTER(&htim1, 0);
+	      while (__HAL_TIM_GET_COUNTER (&htim1) < 10);  // wait for 10 us
+	      HAL_GPIO_WritePin(TRIG_PORT, TRIG_PIN, GPIO_PIN_RESET);  // pull the TRIG pin low
+
+	      pMillis = HAL_GetTick(); // used this to avoid infinite while loop  (for timeout)
+	      // wait for the echo pin to go high
+	      while (!(HAL_GPIO_ReadPin (ECHO_PORT, ECHO_PIN)) && pMillis + 10 >  HAL_GetTick());
+	      Value1 = __HAL_TIM_GET_COUNTER (&htim1);
+
+	      pMillis = HAL_GetTick(); // used this to avoid infinite while loop (for timeout)
+	      // wait for the echo pin to go low
+	      while ((HAL_GPIO_ReadPin (ECHO_PORT, ECHO_PIN)) && pMillis + 50 > HAL_GetTick());
+	      Value2 = __HAL_TIM_GET_COUNTER (&htim1);
+
+	      Distance = (Value2-Value1)* 0.034/2;
+	      HAL_Delay(50);
+
+//
+//
+//
+
+
+	  //data transmit
+	  int16_t tx_buff[] = {0,6};
+ 	  HAL_UART_Transmit(&huart1, tx_buff, 2, 1000);
+ 	  HAL_Delay(50);
+
+
+
+ 	 if(HAL_UART_Receive(&huart1, rx_buff, 4, 1000)==HAL_OK) {//if transfer is successful
+ 	 //do a assert
+
+// 	 if (True){ //if data is in the right format
+ 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, rx_buff[0]);
+ 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, rx_buff[1]);
+ 	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, rx_buff[2]);
+ 	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, rx_buff[3]);
+ 	 //}
+
+ 	// else{
+ 	 //give an error message or smth
+ 	 //}
+
+ 	}
+
+ 	 else{
+ 		__NOP();
+
+ 	 }
+
 
 
 
 
 
   }
-	  HAL_Delay(2000);
+	 HAL_Delay(2000);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -265,7 +347,6 @@ void SystemClock_Config(void)
   * @param None
   * @retval None
   */
-
 static void MX_TIM1_Init(void)
 {
 
@@ -304,6 +385,39 @@ static void MX_TIM1_Init(void)
   /* USER CODE BEGIN TIM1_Init 2 */
 
   /* USER CODE END TIM1_Init 2 */
+
+}
+
+/**
+  * @brief USART1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART1_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART1_Init 0 */
+
+  /* USER CODE END USART1_Init 0 */
+
+  /* USER CODE BEGIN USART1_Init 1 */
+
+  /* USER CODE END USART1_Init 1 */
+  huart1.Instance = USART1;
+  huart1.Init.BaudRate = 115200;
+  huart1.Init.WordLength = UART_WORDLENGTH_8B;
+  huart1.Init.StopBits = UART_STOPBITS_1;
+  huart1.Init.Parity = UART_PARITY_NONE;
+  huart1.Init.Mode = UART_MODE_TX_RX;
+  huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART1_Init 2 */
+
+  /* USER CODE END USART1_Init 2 */
 
 }
 
@@ -358,10 +472,13 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0|GPIO_PIN_1, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_9, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0|GPIO_PIN_4|LD2_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0|GPIO_PIN_9, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : B1_Pin */
   GPIO_InitStruct.Pin = B1_Pin;
@@ -369,31 +486,38 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
 
+  /*Configure GPIO pins : PC0 PC1 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PA0 PA4 LD2_Pin */
+  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_4|LD2_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
   /*Configure GPIO pin : PA1 */
   GPIO_InitStruct.Pin = GPIO_PIN_1;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : LD2_Pin */
-  GPIO_InitStruct.Pin = LD2_Pin;
+  /*Configure GPIO pins : PB0 PB9 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_9;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(LD2_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pin : PC8 */
   GPIO_InitStruct.Pin = GPIO_PIN_8;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : PB9 */
-  GPIO_InitStruct.Pin = GPIO_PIN_9;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
 /* USER CODE END MX_GPIO_Init_2 */
