@@ -23,3 +23,6 @@ This project contains the code that takes input from sensors and operates motor 
 - RC0402FR-07 100RL 100 Ohm Resistor
 - Red LED
 - Terminal Block
+
+### PINOUT/Specification
+https://docs.google.com/document/d/1da4ngjfaFBrSPT4L2-smErNa-F7X0KQxOnz7wrnbCJ8/edit?tab=t.0#heading=h.oagk05vn6lw0
