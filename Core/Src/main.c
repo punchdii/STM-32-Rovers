@@ -93,6 +93,7 @@ uint16_t Distance  = 0;  // cm
 
 //UART transimission
 uint8_t rx_buff[4] = {};
+uint8_t motor_input = 0;
 
 void microDelay (uint16_t delay)
 {
@@ -261,8 +262,17 @@ int main(void)
 
 
 
- 	 if(HAL_UART_Receive(&huart1, rx_buff, 4, 1000)==HAL_OK) {//if transfer is successful
- 	 //do a assert
+ 	 if (HAL_UART_Receive(&huart1, motor_input, 1, 1000)==HAL_OK) {//if transfer is successful
+      if (motor_input == 0){
+        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, 0); //we must change this to the motor
+      } else if (motor_input == 1){
+        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, 0);
+      } else if (motor_input == 2){
+        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, 0;
+      } else if (motor_input == 3){
+        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, 0);
+      } 
+ 	 //do a assert for testing only
 
 // 	 if (True){ //if data is in the right format
  	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, rx_buff[0]);
