@@ -261,31 +261,94 @@ int main(void)
 
 
 
- 	 if(HAL_UART_Receive(&huart1, rx_buff, 4, 1000)==HAL_OK) {//if transfer is successful
+ 	  //start of motro signal receive
+
+ 	 int16_t rx_buff;
+
+ 	 if(HAL_UART_Receive(&huart1, rx_buff, 1, 1000)==HAL_OK) {//if transfer is successful
  	 //do a assert
 
+
+ 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
+ 		 if (rx_buff == 0){
+ 		 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, 1);
+ 		 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, 0);
+ 		 	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, 0);
+ 		 	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, 1);
+
+
+ 		 }
+
+ 		 else if (rx_buff == 1){
+
+ 			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, 1);
+ 			 		 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, 0);
+ 			 		 	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, 1);
+ 			 		 	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, 0);
+ 	 		 }
+
+ 		else if (rx_buff == 2){
+ 			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, 0);
+ 			 		 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, 1);
+ 			 		 	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, 0);
+ 			 		 	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, 1);
+ 		 	 		 }
+ 		else if (rx_buff == 3){
+ 			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, 0);
+ 			 		 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, 1);
+ 			 		 	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, 1);
+ 			 		 	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, 0);
+ 		 	 		 }
+
+
+ 	 }
+ 	 else{
+
+ 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
+ 	 }
+
+
+
+
 // 	 if (True){ //if data is in the right format
- 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, rx_buff[0]);
- 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, rx_buff[1]);
- 	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, rx_buff[2]);
- 	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, rx_buff[3]);
+
+
+
+
+
  	 //}
 
  	// else{
  	 //give an error message or smth
  	 //}
 
- 	}
+// 	}
+//
+// 	 else{
+// 		__NOP();
+//
+// 	 }
 
- 	 else{
- 		__NOP();
 
+ 	 //end of motor signal recevign
+
+
+
+
+ 	 //button test motor start
+ 	 if (HAL_GPIO_ReadPin (GPIOC, GPIO_PIN_13) == GPIO_PIN_RESET){
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, 1);
+		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, 0);
+		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, 1);
+		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, 0);
  	 }
-
-
-
-
-
+ 	 else{
+ 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, 0);
+ 		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, 0);
+ 		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, 0);
+ 		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, 0);
+ 	 }
+ 	 //button test motor end
 
   }
 	 HAL_Delay(2000);
