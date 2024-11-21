@@ -201,6 +201,41 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+    // Initialize the ultrasonic sensor
+void ultrasonic_init() {
+    HAL_GPIO_WritePin(TRIG_PORT, TRIG_PIN, GPIO_PIN_RESET); // Ensure TRIG is low
+    HAL_Delay(50); // Stabilization delay
+}
+
+// Delay in microseconds
+void delay_us(uint16_t us) {
+    __HAL_TIM_SET_COUNTER(&htim2, 0);
+    while (__HAL_TIM_GET_COUNTER(&htim2) < us);
+}
+
+// Get distance from ultrasonic sensor
+float get_distance() {
+    // Trigger the ultrasonic sensor
+    HAL_GPIO_WritePin(TRIG_PORT, TRIG_PIN, GPIO_PIN_SET);
+    delay_us(10); // 10 µs pulse
+    HAL_GPIO_WritePin(TRIG_PORT, TRIG_PIN, GPIO_PIN_RESET);
+
+    // Wait for the echo to start
+    uint32_t start_time = HAL_GetTick();
+    while (HAL_GPIO_ReadPin(ECHO_PORT, ECHO_PIN) == GPIO_PIN_RESET) {
+        if (HAL_GetTick() - start_time > 100) return -1; // Timeout
+    }
+
+    // Measure the duration of the echo pulse
+    __HAL_TIM_SET_COUNTER(&htim2, 0); // Reset timer
+    while (HAL_GPIO_ReadPin(ECHO_PORT, ECHO_PIN) == GPIO_PIN_SET);
+    echo_time = __HAL_TIM_GET_COUNTER(&htim2);
+
+    // Calculate distance in cm
+    float distance = (echo_time * 0.0343) / 2.0;
+    return distance;
+
+    
 	  //temperature sensor
 	  if(DHT11_Start())
 	  {
